@@ -7,9 +7,9 @@
 <style>
   html,body{height:100%;margin:0;background:#05070b;overflow:hidden}
   #app{position:fixed;inset:0}
-  .brand{position:fixed;left:50%;bottom:6vmin;transform:translateX(-50%);
-    font:600 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    letter-spacing:.08em;text-transform:uppercase;color:#8bd4ff;opacity:.8;
+  .brand{position:fixed;left:50%;bottom:clamp(20px, 5vw, 40px);transform:translateX(-50%);
+    font:700 clamp(12px, 2vw, 16px)/1.2 system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    letter-spacing:.08em;text-transform:uppercase;color:#ff6b35;opacity:.8;
     text-decoration:none;transition:opacity 0.3s ease}
   .brand:hover{opacity:1}
   
@@ -24,7 +24,7 @@
   }
   
   .logo {
-    max-width: 400px;
+    max-width: clamp(300px, 30vw, 500px);
     width: 100%;
     height: auto;
     margin-bottom: 30px;
@@ -32,6 +32,12 @@
     animation: logoFloat 3s ease-in-out infinite alternate;
     position: relative;
     z-index: 1;
+    top: -200px;
+  }
+  
+  .text-content {
+    position: relative;
+    top: clamp(150px, 15vw, 200px);
   }
   
   .title {
@@ -44,16 +50,40 @@
   }
   
   .slogan {
-    font-size: 1.5rem;
+    font-size: clamp(2rem, 4vw, 3rem);
     color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 40px;
+    margin-bottom: 15px;
     font-weight: 600;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid #ff6b35;
+    padding-bottom: 15px;
+    position: relative;
+  }
+  
+  .slogan::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #ff6b35;
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    animation: pulseGlow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes pulseGlow {
+    0% {
+      box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    }
+    100% {
+      box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+    }
   }
   
   .coming-soon {
-    font-size: 1.2rem;
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
     color: rgba(255, 255, 255, 0.8);
     margin-bottom: 30px;
     font-weight: 600;
@@ -80,7 +110,7 @@
     }
     
     .logo {
-      max-width: 300px;
+      max-width: clamp(250px, 25vw, 350px);
     }
   }
 
@@ -102,9 +132,11 @@
 <div class="content">
   <img src="AdroitAI.png" alt="AdroitAI Logo" class="logo">
   
-  <p class="slogan">AI that Flows With Your Business</p>
-  
-  <p class="coming-soon">Coming Soon</p>
+  <div class="text-content">
+    <p class="slogan">AI that Flows With Your Business</p>
+    
+    <p class="coming-soon">Under Development</p>
+  </div>
 </div>
 
 <!-- Three.js core -->
