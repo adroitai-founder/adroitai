@@ -230,13 +230,352 @@
     cubeGroup.scale.setScalar(newSize / size);
   });
 
+  // Space Invaders game state
+  let clickCount = 0;
+  let gameActive = false;
+  let invaders = [];
+  let player = { x: 0, y: -4, lives: 2, hit: false, flashTime: 0 };
+  let bullets = [];
+  let enemyBullets = [];
+  let lastShot = 0;
+  let lastEnemyShot = 0;
+  
+  // Click counter for logo
+  document.querySelector('.logo').addEventListener('click', (e) => {
+    e.preventDefault();
+    clickCount++;
+    if (clickCount >= 3 && !gameActive) {
+      startSpaceInvaders();
+    }
+  });
+  
+  function startSpaceInvaders() {
+    gameActive = true;
+    clickCount = 0;
+    
+    // Hide the cube and logo
+    cubeGroup.visible = false;
+    document.querySelector('.content').style.display = 'none';
+    
+    // Create invaders - 6 wide by 7 tall
+    invaders = [];
+    for (let row = 0; row < 7; row++) {
+      for (let col = 0; col < 6; col++) {
+        invaders.push({
+          x: (col - 2.5) * 0.3,
+          y: 1.5 - row * 0.2,
+          alive: true
+        });
+      }
+    }
+    
+    // Reset player - position it higher so it's visible
+    player = { x: 0, y: -1.5, lives: 2, hit: false, flashTime: 0 };
+    bullets = [];
+    enemyBullets = [];
+    
+    // Clear any existing game objects
+    gameObjects.invaders.forEach(obj => scene.remove(obj));
+    gameObjects.bullets.forEach(obj => scene.remove(obj));
+    if (gameObjects.player) scene.remove(gameObjects.player);
+    gameObjects.invaders = [];
+    gameObjects.bullets = [];
+    gameObjects.player = null;
+    
+    // Show game instructions
+    const instructions = document.createElement('div');
+    instructions.id = 'game-instructions';
+    instructions.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 18px;
+      z-index: 100;
+      text-align: center;
+      background: rgba(0,0,0,0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
+    `;
+    instructions.innerHTML = 'SPACE INVADERS!<br>Desktop: Arrow keys to move<br>Mobile: Swipe to move<br>Shooting is automatic!<br>Lives: 2';
+    document.body.appendChild(instructions);
+    
+    // Remove instructions after 5 seconds
+    setTimeout(() => {
+      if (instructions.parentNode) {
+        instructions.parentNode.removeChild(instructions);
+      }
+    }, 5000);
+  }
+  
+  function updateGame() {
+    if (!gameActive) return;
+    
+    // Move invaders - advance towards player slowly
+    invaders.forEach(invader => {
+      if (invader.alive) {
+        invader.x += Math.sin(Date.now() * 0.001) * 0.01;
+        invader.y -= 0.0005; // Slowly advance towards player
+      }
+    });
+    
+    // Auto-shoot bullets
+    if (Date.now() - lastShot > 300) {
+      bullets.push({ x: player.x, y: player.y + 0.3 });
+      lastShot = Date.now();
+    }
+    
+    // Enemy shooting
+    if (Date.now() - lastEnemyShot > 800) {
+      const aliveInvaders = invaders.filter(inv => inv.alive);
+      if (aliveInvaders.length > 0) {
+        const randomInvader = aliveInvaders[Math.floor(Math.random() * aliveInvaders.length)];
+        enemyBullets.push({ x: randomInvader.x, y: randomInvader.y - 0.2 });
+        lastEnemyShot = Date.now();
+      }
+    }
+    
+    // Move bullets
+    bullets = bullets.filter(bullet => {
+      bullet.y += 0.1;
+      return bullet.y < 5;
+    });
+    
+    // Move enemy bullets - much slower
+    enemyBullets = enemyBullets.filter(bullet => {
+      bullet.y -= 0.03;
+      return bullet.y > -5;
+    });
+    
+    // Check collisions
+    bullets.forEach((bullet, bulletIndex) => {
+      invaders.forEach((invader, invaderIndex) => {
+        if (invader.alive && 
+            Math.abs(bullet.x - invader.x) < 0.12 && 
+            Math.abs(bullet.y - invader.y) < 0.12) {
+          invader.alive = false;
+          bullets.splice(bulletIndex, 1);
+        }
+      });
+    });
+    
+    // Check enemy bullet collisions with player
+    enemyBullets.forEach((bullet, bulletIndex) => {
+      if (Math.abs(bullet.x - player.x) < 0.2 && 
+          Math.abs(bullet.y - player.y) < 0.2) {
+        // Player hit - lose a life and flash red
+        player.lives--;
+        player.hit = true;
+        player.flashTime = 60; // Flash for 60 frames (about 1 second)
+        enemyBullets.splice(bulletIndex, 1);
+        
+        if (player.lives <= 0) {
+          // Game over
+          gameActive = false;
+          clickCount = 0;
+          
+          // Show game over message
+          const gameOver = document.createElement('div');
+          gameOver.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-size: 24px;
+            z-index: 100;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+          `;
+          gameOver.innerHTML = 'GAME OVER!<br>You were hit 2 times!';
+          document.body.appendChild(gameOver);
+          
+          // Restore normal view after 3 seconds
+          setTimeout(() => {
+            cubeGroup.visible = true;
+            document.querySelector('.content').style.display = 'block';
+            if (gameOver.parentNode) {
+              gameOver.parentNode.removeChild(gameOver);
+            }
+          }, 3000);
+        }
+      }
+    });
+    
+    // Check win condition
+    if (invaders.every(inv => !inv.alive)) {
+      gameActive = false;
+      clickCount = 0;
+      
+      // Show victory message
+      const victory = document.createElement('div');
+      victory.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #00ff00;
+        font-size: 24px;
+        z-index: 100;
+        text-align: center;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 10px;
+      `;
+      victory.innerHTML = 'VICTORY!<br>All invaders destroyed!';
+      document.body.appendChild(victory);
+      
+      // Restore normal view after 3 seconds
+      setTimeout(() => {
+        cubeGroup.visible = true;
+        document.querySelector('.content').style.display = 'block';
+        if (victory.parentNode) {
+          victory.parentNode.removeChild(victory);
+        }
+      }, 3000);
+    }
+  }
+  
+  // Game objects for persistent rendering
+  let gameObjects = {
+    invaders: [],
+    player: null,
+    bullets: [],
+    enemyBullets: []
+  };
+  
+  function renderGame() {
+    if (!gameActive) return;
+    
+    // Clear previous game objects
+    gameObjects.invaders.forEach(obj => scene.remove(obj));
+    gameObjects.bullets.forEach(obj => scene.remove(obj));
+    gameObjects.enemyBullets.forEach(obj => scene.remove(obj));
+    if (gameObjects.player) scene.remove(gameObjects.player);
+    gameObjects.invaders = [];
+    gameObjects.bullets = [];
+    gameObjects.enemyBullets = [];
+    gameObjects.player = null;
+    
+    // Render invaders - smaller size for mobile
+    invaders.forEach(invader => {
+      if (invader.alive) {
+        const invaderGeo = new THREE.BoxGeometry(0.12, 0.08, 0.02);
+        const invaderMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const invaderMesh = new THREE.Mesh(invaderGeo, invaderMat);
+        invaderMesh.position.set(invader.x, invader.y, 0);
+        scene.add(invaderMesh);
+        gameObjects.invaders.push(invaderMesh);
+      }
+    });
+    
+    // Render player - smaller size for mobile, with hit effect
+    const playerGeo = new THREE.BoxGeometry(0.3, 0.15, 0.08);
+    let playerColor = 0x0088ff; // Blue by default
+    
+    // Flash red if hit
+    if (player.hit && player.flashTime > 0) {
+      playerColor = 0xff0000; // Red when hit
+      player.flashTime--;
+    } else if (player.hit && player.flashTime <= 0) {
+      player.hit = false; // Stop flashing after time
+    }
+    
+    const playerMat = new THREE.MeshBasicMaterial({ color: playerColor });
+    const playerMesh = new THREE.Mesh(playerGeo, playerMat);
+    playerMesh.position.set(player.x, player.y, 0);
+    scene.add(playerMesh);
+    gameObjects.player = playerMesh;
+    
+    // Render bullets - smaller size for mobile
+    bullets.forEach(bullet => {
+      const bulletGeo = new THREE.SphereGeometry(0.03);
+      const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      const bulletMesh = new THREE.Mesh(bulletGeo, bulletMat);
+      bulletMesh.position.set(bullet.x, bullet.y, 0);
+      scene.add(bulletMesh);
+      gameObjects.bullets.push(bulletMesh);
+    });
+    
+    // Render enemy bullets - red color, smaller for mobile
+    enemyBullets.forEach(bullet => {
+      const bulletGeo = new THREE.SphereGeometry(0.03);
+      const bulletMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const bulletMesh = new THREE.Mesh(bulletGeo, bulletMat);
+      bulletMesh.position.set(bullet.x, bullet.y, 0);
+      scene.add(bulletMesh);
+      gameObjects.enemyBullets.push(bulletMesh);
+    });
+    
+  }
+  
+  // Game controls
+  document.addEventListener('keydown', (e) => {
+    if (!gameActive) return;
+    
+    if (e.key === 'ArrowLeft') {
+      player.x = Math.max(-1.5, player.x - 0.2);
+    }
+    if (e.key === 'ArrowRight') {
+      player.x = Math.min(1.5, player.x + 0.2);
+    }
+  });
+  
+  // Mobile touch controls
+  let touchStartX = 0;
+  let touchStartY = 0;
+  
+  canvas.addEventListener('touchstart', (e) => {
+    if (!gameActive) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  });
+  
+  canvas.addEventListener('touchmove', (e) => {
+    if (!gameActive) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    
+    // Horizontal movement
+    if (Math.abs(deltaX) > 20) {
+      if (deltaX > 0) {
+        player.x = Math.min(1.5, player.x + 0.2);
+      } else {
+        player.x = Math.max(-1.5, player.x - 0.2);
+      }
+      touchStartX = touch.clientX;
+    }
+    
+  });
+  
+  canvas.addEventListener('touchend', (e) => {
+    if (!gameActive) return;
+    e.preventDefault();
+  });
+
   // Animate
   renderer.setAnimationLoop(()=>{
-    cubeGroup.rotation.x += 0.0035;
-    cubeGroup.rotation.y += 0.0050;
-    camera.position.x += (Math.sin(targetY)*0.5 - camera.position.x)*0.08;
-    camera.position.y += (Math.sin(targetX)*0.5 - camera.position.y)*0.08;
-    camera.lookAt(0,0,0);
+    if (!gameActive) {
+      cubeGroup.rotation.x += 0.0035;
+      cubeGroup.rotation.y += 0.0050;
+      camera.position.x += (Math.sin(targetY)*0.5 - camera.position.x)*0.08;
+      camera.position.y += (Math.sin(targetX)*0.5 - camera.position.y)*0.08;
+      camera.lookAt(0,0,0);
+    } else {
+      // Game mode - keep camera stable
+      camera.position.set(0, 0, 6);
+      camera.lookAt(0, 0, 0);
+    }
+    
+    updateGame();
+    renderGame();
     composer.render();
   });
 </script>
