@@ -19,17 +19,19 @@
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    z-index: 10;
+    z-index: 1;
     color: white;
   }
   
   .logo {
-    max-width: 200px;
+    max-width: 400px;
     width: 100%;
     height: auto;
     margin-bottom: 30px;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
     animation: logoFloat 3s ease-in-out infinite alternate;
+    position: relative;
+    z-index: 1;
   }
   
   .title {
@@ -78,7 +80,7 @@
     }
     
     .logo {
-      max-width: 150px;
+      max-width: 300px;
     }
   }
 
@@ -128,7 +130,7 @@
   const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
   camera.position.set(0,0,6);
 
-  const NEON = new THREE.Color(0xed6c2b);
+  const NEON = new THREE.Color(0xff6b35);
   const size = Math.min(window.innerWidth, window.innerHeight) * 0.003;
 
   // Group for cube + glow
@@ -146,6 +148,9 @@
   cubeGroup.add(glow);
 
   scene.add(cubeGroup);
+  
+  // Set cube group z-index to be in front of the logo
+  cubeGroup.position.z = 1;
 
   // Starfield
   (function(){
